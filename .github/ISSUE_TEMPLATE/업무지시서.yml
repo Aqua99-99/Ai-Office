@@ -1,0 +1,50 @@
+name: 업무 지시서
+description: AI 사무실 팀에게 일을 맡겨요
+title: "[업무지시서] "
+body:
+  - type: input
+    id: project
+    attributes:
+      label: 프로젝트 이름
+      description: 받은편지함에 올린 ZIP 이름 (사이트 프로젝트 카드에 보이는 이름)
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: 할 일 (비우면 스스로 점검하고 고쳐요)
+      placeholder: 예) 버그를 찾아 고치고, 화면 문구를 쉽게 다듬어 줘
+  - type: checkboxes
+    id: days
+    attributes:
+      label: 요일
+      options:
+        - label: 월
+        - label: 화
+        - label: 수
+        - label: 목
+        - label: 금
+        - label: 토
+        - label: 일
+  - type: input
+    id: from
+    attributes:
+      label: 시작일
+      placeholder: "2026-10-06"
+  - type: input
+    id: to
+    attributes:
+      label: 마지막 날
+      placeholder: "2026-10-10"
+  - type: input
+    id: minutes
+    attributes:
+      label: 하루 최대 시간(분)
+      placeholder: "60"
+  - type: checkboxes
+    id: options
+    attributes:
+      label: 옵션
+      options:
+        - label: 지금 바로 한 번 일하기
+        - label: 작은 AI만 쓰기 (클라우드 AI에 코드를 보내지 않아요)
