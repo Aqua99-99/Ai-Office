@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 사무실</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Dodum&family=Silkscreen&display=swap">
+<style>
+/* 레이아웃: 픽셀 사무실이 주인공, 옆에 직원 현황·업무일지, 아래에 프로젝트 */
+:root{
+  --bg:#efe9df; --panel:#fbf8f2; --ink:#2b2622; --muted:#6f6559; --line:#ddd2c2;
+  --accent:#c2643a; --ok:#3f8f5a; --warn:#c89220; --bad:#c2433a; --info:#3f6fae; --chip:#efe6d8;
+  --f-display:"Do Hyeon","Gowun Dodum","Malgun Gothic",system-ui,sans-serif;
+  --f-body:"Gowun Dodum","Malgun Gothic",system-ui,sans-serif;
+  --f-pixel:"Silkscreen","Consolas","Courier New",monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1c1916; --panel:#26221e; --ink:#efe7db; --muted:#a89c8c; --line:#3a332c;
+  --accent:#e08457; --ok:#5fb37b; --warn:#e0b04a; --bad:#e2675e; --info:#6f9ad6; --chip:#332d27; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:18px 40px;display:flex;flex-direction:column;gap:16px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 18px}
+.dept{font-family:var(--f-pixel);font-size:12px;letter-spacing:.08em;color:var(--accent)}
+h1{margin:2px 0 0;font-family:var(--f-display);font-weight:400;font-size:clamp(26px,4vw,36px);line-height:1.1}
+.mission{margin:4px 0 0;color:var(--muted)}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.runbox{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.lamp{width:10px;height:10px;border-radius:2px;background:var(--muted)}
+.lamp.on{background:var(--ok);animation:blink 1.4s steps(2) infinite}
+@keyframes blink{50%{opacity:.45}}
+.runbox b{font-family:var(--f-display);font-weight:400;font-size:17px}
+.runbox small{display:block;color:var(--muted);font-size:12px}
+button,.btn{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.alert{border:1px dashed var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--panel));border-radius:10px;padding:10px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;border-radius:12px;overflow:hidden;background:#1d1712;border:3px solid #3b2a1d;box-shadow:0 6px 0 #2a1d14}
+.stage canvas{display:block;width:100%;height:auto;image-rendering:pixelated;cursor:pointer}
+.ov{position:absolute;inset:0;pointer-events:none}
+.bubble{position:absolute;transform:translate(-50%,-100%);background:#fffaf0;color:#2b2622;border:2px solid #2b2622;border-radius:6px;padding:3px 7px;font-size:clamp(10px,1.3vw,13px);line-height:1.3;max-width:min(42%,230px);box-shadow:2px 2px 0 rgba(0,0,0,.35);word-break:keep-all;transition:opacity .25s}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);border:5px solid transparent;border-top-color:#2b2622;border-bottom:0}
+.tag{position:absolute;transform:translate(-50%,0);font-family:var(--f-display);font-size:clamp(9px,1.2vw,12px);color:#fff4e2;background:rgba(30,20,12,.72);padding:0 5px;border-radius:3px;white-space:nowrap}
+.wb{position:absolute;color:#2b3a4a;font-family:var(--f-display);font-size:clamp(8px,1.15vw,12px);line-height:1.25;overflow:hidden}
+.wb .t{font-family:var(--f-pixel);font-size:clamp(6px,.8vw,9px);color:#8a4b2b}
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.card h2{margin:0 0 8px;font-family:var(--f-display);font-weight:400;font-size:19px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card h2 small{font-family:var(--f-pixel);font-size:10px;color:var(--muted)}
+.staff{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.staff li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px;border-radius:8px}
+.staff canvas{width:34px;height:34px;image-rendering:pixelated;background:#e9dcc6;border-radius:6px}
+.staff .nm{font-family:var(--f-display);font-size:16px;line-height:1.1}
+.staff .tk{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{font-size:11.5px;padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid currentColor}
+.p-idle{color:var(--muted)} .p-working{color:var(--info)} .p-review{color:var(--warn)} .p-blocked{color:var(--bad)} .p-done{color:var(--ok)}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:360px;overflow:auto}
+.log li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;font-size:13.5px}
+.log time{font-family:var(--f-pixel);font-size:10px;color:var(--muted);padding-top:3px}
+.log b{font-family:var(--f-display);font-weight:400;font-size:15px}
+.log .k{font-size:11px;color:var(--muted);margin-left:4px}
+.empty{color:var(--muted);font-size:13.5px}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:16px;text-align:center;color:var(--muted)}
+.drop.over{border-color:var(--accent);color:var(--accent)}
+.projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.proj{display:flex;flex-direction:column;gap:8px}
+.proj .nm{font-family:var(--f-display);font-size:20px}
+.proj .meta{font-size:13px;color:var(--muted)}
+.proj .acts{display:flex;flex-wrap:wrap;gap:6px}
+.proj .runs{list-style:none;margin:0;padding:0;font-size:13px;display:flex;flex-direction:column;gap:4px}
+.proj .runs a{color:var(--info);cursor:pointer;text-decoration:underline}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);max-width:min(720px,94vw);width:100%;padding:18px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h3{margin:0 0 10px;font-family:var(--f-display);font-weight:400;font-size:22px}
+.form{display:flex;flex-direction:column;gap:10px}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.form input[type=text],.form input[type=date],.form input[type=time],.form input[type=number],.form textarea,.form select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.days label{flex-direction:row;align-items:center;gap:4px;border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>label{flex:1;min-width:140px}
+.dlg-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.md{max-height:65vh;overflow:auto;font-size:14.5px}
+.md h1,.md h2{font-family:var(--f-display);font-weight:400}
+.md code{background:var(--chip);padding:0 4px;border-radius:4px}
+.hw{font-size:14px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.hw dt{color:var(--muted)}
+.hw dd{margin:0}
+.bar{height:8px;background:var(--chip);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+.note{font-size:13px;color:var(--muted)}
+.brains{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.brains li{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.brains .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.brains .top b{font-weight:600;flex:1;min-width:160px}
+.brains .row2{display:flex;gap:6px;flex-wrap:wrap}
+.brains .row2 input{flex:1;min-width:140px;font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.brains button{padding:4px 8px;font-size:12.5px}
+.brains .res{font-size:12.5px}
+.brains li.fixed{opacity:.85;border-style:dashed}
+.sec-title{margin:14px 0 4px;font-family:var(--f-display);font-weight:400;font-size:18px}
+@media (prefers-reduced-motion:reduce){.lamp.on{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="dept">AI OFFICE · 내 컴퓨터의 무료 AI</div>
+      <h1 id="title">AI 사무실</h1>
+      <p class="mission" id="mission">프로젝트 ZIP을 넣으면 AI 직원들이 알아서 살펴보고 고쳐요.</p>
+    </div>
+    <div class="tools">
+      <div class="runbox"><span class="lamp" id="lamp"></span><div><b id="runState">쉬는 중</b><small id="runSub">업무 대기</small></div></div>
+      <button id="btnSetup">설정</button>
+      <button id="btnQuit" title="AI 사무실 프로그램을 꺼요">퇴근</button>
+    </div>
+  </header>
+
+  <div class="alert" id="setupAlert" hidden><b id="alertLabel">시작 전에</b><span id="setupMsg">AI 두뇌(모델)를 골라 주세요.</span><button class="primary" id="btnSetup2">설정 열기</button></div>
+
+  <div class="grid">
+    <div class="stage">
+      <canvas id="cv" width="320" height="240" aria-label="AI 직원들이 일하는 픽셀 사무실"></canvas>
+      <div class="ov" id="ov"></div>
+    </div>
+    <aside class="side">
+      <section class="card"><h2>직원 현황 <small>STAFF</small></h2><ul class="staff" id="staffList"></ul></section>
+      <section class="card"><h2>업무일지 <small>LOG</small></h2><ul class="log" id="logList"><li class="empty">아직 기록이 없어요.</li></ul></section>
+    </aside>
+  </div>
+
+  <section class="card">
+    <h2>프로젝트 <small id="queueInfo"></small></h2>
+    <div class="drop" id="drop">프로젝트 <b>ZIP 파일</b>을 여기에 끌어다 놓거나 <button id="btnPick">파일 고르기</button> · <button id="btnInbox">받은편지함 폴더 열기</button>
+      <input type="file" id="file" accept=".zip" hidden></div>
+    <div class="projects" id="projects" style="margin-top:12px"></div>
+  </section>
+</div>
+
+<dialog id="dlgSetup"><h3>설정</h3>
+  <div id="setupBody" class="form"><p class="note">컴퓨터 사양을 확인하는 중…</p></div>
+  <div class="dlg-acts"><button id="setupClose">닫기</button></div>
+</dialog>
+
+<dialog id="dlgOrder"><h3 id="orderTitle">업무 지시서</h3>
+  <form class="form" id="orderForm">
+    <label>무엇을 해 줄까요? (비워 두면 스스로 점검하고 고쳐요)
+      <textarea id="oGoal" rows="3" placeholder="예: 버그를 찾아 고치고, 화면 문구를 쉽게 다듬어 줘"></textarea></label>
+    <div class="row"><label>시작일<input type="date" id="oFrom"></label><label>마지막 날<input type="date" id="oTo"></label></div>
+    <div>요일<div class="days" id="oDays"></div></div>
+    <div class="row"><label>시작 시각<input type="time" id="oTime" value="09:00"></label><label>하루 최대 시간(분)<input type="number" id="oMax" min="10" max="600" value="60"></label></div>
+    <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="oOn"> 이 일정대로 자동으로 일하기</label>
+    <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="oLocal"> 이 프로젝트는 <b>내 컴퓨터 AI만</b> 쓰기 <span class="note">(코드를 밖으로 보내지 않아요)</span></label>
+    <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="oTests"> 프로젝트에 들어 있는 시험 코드도 실행하기 <span class="note">(믿을 수 있는 프로젝트만)</span></label>
+    <p class="note">컴퓨터와 이 프로그램이 켜져 있을 때 일해요. 마지막 날에는 종합 보고서도 만들어요.</p>
+    <div class="dlg-acts"><button type="button" id="orderCancel">취소</button><button type="submit" class="primary">저장</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgText"><h3 id="textTitle">보기</h3><div class="md" id="textBody"></div>
+  <div class="dlg-acts"><button id="textOpen" hidden>폴더 열기</button><button id="textClose">닫기</button></div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+const TOKEN='__AIO_TOKEN__';
+const OFF_MSG='AI 사무실 프로그램이 꺼져 있어요. 바탕화면 AI-Office 폴더의 AI-Office.vbs를 더블클릭해서 다시 켜 주세요.';
+const api=async(p,opt={})=>{let r;try{r=await fetch(p,{...opt,headers:{'X-AIO-Token':TOKEN,...(opt.headers||{})}})}catch(e){throw new Error(OFF_MSG)}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('오류 '+r.status));return j};
+const post=(p,b)=>api(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});
+const $=id=>document.getElementById(id);
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+const STAFF=[
+  {id:'pm',  name:'팀장',   role:'업무를 나누고 결과를 모아 보고해요', hair:'#2b1d14', skin:'#f1c9a5', shirt:'#4a5d7a', pants:'#2a2f3a', acc:'tie'},
+  {id:'dev', name:'개발자', role:'기능을 만들고 버그를 고쳐요',      hair:'#5a3a22', skin:'#e8b88f', shirt:'#3f8f5a', pants:'#33302b', acc:'hood'},
+  {id:'qa',  name:'테스터', role:'시험하고 통과/반려를 정해요',      hair:'#c46a2c', skin:'#f3d0b0', shirt:'#d9a03a', pants:'#3a3f52', acc:'glasses'},
+  {id:'sec', name:'보안',   role:'위험한 코드를 찾아요',             hair:'#1b1b22', skin:'#d9a57c', shirt:'#2e2f38', pants:'#1f2128', acc:'cap'},
+  {id:'des', name:'디자이너',role:'화면과 문구를 살펴요',            hair:'#e6d6c4', skin:'#f4d6bd', shirt:'#c46a8a', pants:'#3b3346', acc:'bun'},
+  {id:'ops', name:'배포',   role:'결과물을 정리해요',                hair:'#3a2a1e', skin:'#c98e66', shirt:'#c2643a', pants:'#2b2a2f', acc:'none'},
+];
+const STATUS={idle:'대기',working:'작업 중',review:'검토 중',blocked:'반려·막힘',done:'완료'};
+const KIND={say:'말함',handoff:'전달',report:'보고',start:'시작',done:'완료',block:'반려'};
+const STATE={mission:'',running:false};
+/* ---------- 사무실 배치 (논리 픽셀 320x240) ---------- */
+const W=320,H=240;
+const DESKS={pm:{x:60,y:92},dev:{x:160,y:92},qa:{x:260,y:92},sec:{x:60,y:152},des:{x:160,y:152},ops:{x:260,y:152}};
+const BOSS={x:160,y:200};
+const CORR=[110,210];          // 책상 사이 통로
+const frontY=y=>y+30;          // 책상 앞 걸어다니는 줄
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
+const ov=document.getElementById('ov');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* 직원 상태 */
+const P={};
+for(const s of STAFF){const d=DESKS[s.id];P[s.id]={...s,x:d.x,y:d.y-2,hx:d.x,hy:d.y-2,path:[],dir:'down',walking:false,
+  status:'idle',task:'',carry:false,bubble:null,bubbleUntil:0,onArrive:null}}
+
+/* ---------- 그리기 도구 ---------- */
+function R(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
+function floor(){
+  for(let y=48;y<H;y+=8){for(let x=0;x<W+32;x+=32){const off=((y/8)%2)*16;
+    R(x-off,y,32,8,((x+y)/8)%3===0?'#8a5a36':'#93623c');R(x-off,y+7,32,1,'#6e4529');R(x-off+31,y,1,8,'#6e4529')}}
+  // 러그 (사장님 자리)
+  R(104,184,112,46,'#6b3b3b');R(106,186,108,42,'#7d4644');for(let i=0;i<108;i+=6)R(106+i,186,3,42,'#86504c');
+}
+function wall(){
+  R(0,0,W,48,'#3e5368');R(0,40,W,8,'#2f3f50');R(0,46,W,2,'#24303c');
+  for(let x=0;x<W;x+=16)R(x,0,1,40,'#46607a');
+  // 창문
+  win(10,8);win(274,8);
+  // 책장
+  shelf(44,6);shelf(232,6);
+  // 화이트보드
+  R(112,6,96,32,'#e9eef2');R(110,4,100,2,'#9aa7b3');R(110,38,100,2,'#9aa7b3');R(110,4,2,36,'#9aa7b3');R(208,4,2,36,'#9aa7b3');
+  R(118,40,30,2,'#c2643a');R(150,40,6,2,'#3f6fae');
+}
+function win(x,y){R(x,y,36,26,'#cfe3ef');R(x,y,36,2,'#e9e1d0');R(x,y+24,36,2,'#e9e1d0');R(x,y,2,26,'#e9e1d0');R(x+34,y,2,26,'#e9e1d0');R(x+17,y,2,26,'#e9e1d0');
+  const h=new Date().getHours();const sky=h<6||h>=19?'#2a3b5a':h<9||h>=17?'#e9b48a':'#9fd0ea';R(x+2,y+2,15,22,sky);R(x+19,y+2,15,22,sky);
+  if(h>=19||h<6){R(x+6,y+6,1,1,'#fff');R(x+25,y+10,1,1,'#fff')}}
+function shelf(x,y){R(x,y,44,34,'#6b4428');R(x+2,y+2,40,14,'#4a2e1a');R(x+2,y+18,40,14,'#4a2e1a');
+  const cs=['#c2643a','#3f6fae','#3f8f5a','#d9a03a','#c46a8a','#e9e1d0','#7a5ca8'];
+  for(let i=0;i<9;i++){R(x+3+i*4.4,y+4+(i%3),3,12-(i%3),cs[i%cs.length]);R(x+3+i*4.4,y+20+(i%2),3,12-(i%2),cs[(i+3)%cs.length])}}
+function plant(x,y){R(x+2,y+10,10,8,'#9a5b35');R(x+3,y+11,8,2,'#b06c40');
+  R(x+4,y,6,10,'#3f8f5a');R(x,y+3,6,6,'#4ea06a');R(x+8,y+2,6,7,'#357a4c');R(x+5,y-3,4,4,'#5cb07a')}
+function desk(id,x,y){
+  const p=P[id];const on=p.status==='working'||p.status==='review';
+  R(x-24,y,48,20,'#c89a62');R(x-24,y,48,3,'#ddb27a');R(x-24,y+18,48,2,'#9c7346');
+  R(x-22,y+20,3,8,'#7a5634');R(x+19,y+20,3,8,'#7a5634');
+  // 모니터 (뒷면이 보이게)
+  R(x-9,y-12,18,13,'#5d6670');R(x-8,y-11,16,11,'#717b86');R(x-2,y+1,4,2,'#4d555e');
+  if(on){const g=(Math.floor(T/300)%2)?'#9fe0ff':'#7cc8f0';R(x-10,y-13,20,1,g);R(x-11,y-12,1,12,g);R(x+10,y-12,1,12,g)}
+  // 키보드·컵
+  R(x-8,y+5,16,4,'#e9e1d0');R(x-7,y+6,14,2,'#cfc5b2');R(x+13,y+4,4,5,'#f3efe6');R(x+14,y+5,2,1,'#6b4428');
+  // 서류
+  if(p.carryDesk){R(x-20,y+4,8,10,'#fffaf0');R(x-19,y+6,6,1,'#999');R(x-19,y+8,5,1,'#999')}
+}
+function bossDesk(){const x=BOSS.x,y=BOSS.y;
+  R(x-30,y,60,22,'#6b3f22');R(x-30,y,60,3,'#87542f');R(x-28,y+4,56,2,'#5a3418');
+  R(x-6,y+4,12,8,'#e9e1d0');R(x-5,y+5,10,1,'#999');R(x-5,y+7,8,1,'#999');
+  // 보고서 쌓인 수
+  for(let i=0;i<Math.min(reports,6);i++)R(x+12,y+12-i*2,10,2,i%2?'#fffaf0':'#efe6d8');
+  // 명패
+  R(x-24,y+14,18,6,'#2b2622');R(x-22,y+16,14,2,'#d9a03a');
+}
+function decor(){
+  plant(4,52);plant(302,52);plant(8,200);
+  // 커피머신
+  const x=290,y=196;R(x,y,22,26,'#3a3f45');R(x+2,y+2,18,8,'#22262a');R(x+4,y+4,4,2,'#c2643a');R(x+8,y+14,6,6,'#f3efe6');R(x,y+26,22,4,'#2a2e33');
+  // 소파
+  R(30,210,48,16,'#4a6a8a');R(30,206,48,6,'#3d5a76');R(28,206,4,20,'#3d5a76');R(76,206,4,20,'#3d5a76');
+  // 휴지통
+  R(96,218,8,10,'#8f969c');R(95,217,10,2,'#6f767c');
+}
+
+/* 사람 (12x18 픽셀) */
+function person(p){
+  const x=Math.round(p.x)-6,y=Math.round(p.y)-18;const f=p.walking?Math.floor(T/160)%2:0;
+  const typing=!p.walking&&(p.status==='working');const dir=p.dir;
+  // 그림자
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x+1,y+17,10,2);
+  // 다리
+  if(p.walking){R(x+3,y+13,3,4-(f?1:0),p.pants);R(x+6,y+13,3,4-(f?0:1),p.pants);R(x+3,y+16-(f?1:0),3,1,'#1a1a1a');R(x+6,y+16-(f?0:1),3,1,'#1a1a1a')}
+  else{R(x+3,y+13,6,4,p.pants);R(x+3,y+16,3,1,'#1a1a1a');R(x+6,y+16,3,1,'#1a1a1a')}
+  // 몸
+  R(x+2,y+8,8,6,p.shirt);
+  // 팔
+  const ab=typing?(Math.floor(T/120)%2):0;
+  R(x+1,y+8+ab,2,5,p.shirt);R(x+9,y+8+(typing?1-ab:0),2,5,p.shirt);R(x+1,y+12+ab,2,1,p.skin);R(x+9,y+12+(typing?1-ab:0),2,1,p.skin);
+  if(p.acc==='tie'&&dir!=='up'){R(x+5,y+8,2,4,'#b23a3a')}
+  if(p.acc==='hood'){R(x+2,y+7,8,2,p.shirt)}
+  // 머리
+  R(x+2,y+1,8,7,p.skin);
+  if(dir==='up'){R(x+2,y,8,7,p.hair)}
+  else{
+    R(x+2,y,8,3,p.hair);R(x+1,y+1,1,4,p.hair);R(x+10,y+1,1,4,p.hair);
+    if(dir==='down'){const bl=(Math.floor(T/2200)%14===0);R(x+4,y+4,1,bl?1:2,'#1a1410');R(x+7,y+4,1,bl?1:2,'#1a1410');R(x+5,y+7,2,1,'#c98a72')}
+    else{const ex=dir==='left'?x+3:x+8;R(ex,y+4,1,2,'#1a1410');if(dir==='left')R(x+8,y+1,3,5,p.hair);else R(x+1,y+1,3,5,p.hair)}
+  }
+  if(p.acc==='glasses'&&dir==='down'){R(x+3,y+4,3,1,'#2b2622');R(x+6,y+4,3,1,'#2b2622')}
+  if(p.acc==='cap'){R(x+1,y-1,10,2,'#c2433a');if(dir==='down')R(x+2,y+1,8,1,'#a23630')}
+  if(p.acc==='bun'){R(x+4,y-3,4,3,p.hair)}
+  // 들고 있는 서류
+  if(p.carry){R(x+9,y+9,5,6,'#fffaf0');R(x+10,y+11,3,1,'#999');R(x+10,y+13,3,1,'#999')}
+  // 상태 아이콘
+  const iy=y-8;
+  if(p.status==='blocked'){R(x+5,iy,2,4,'#e2433a');R(x+5,iy+5,2,1,'#e2433a')}
+  else if(p.status==='done'){R(x+3,iy+3,2,2,'#4fbf6f');R(x+5,iy+4,1,2,'#4fbf6f');R(x+6,iy+2,1,2,'#4fbf6f');R(x+7,iy,1,3,'#4fbf6f')}
+  else if(p.status==='review'){R(x+4,iy,4,4,'#e0b04a');R(x+5,iy+1,2,2,'#fff7da');R(x+8,iy+4,2,2,'#e0b04a')}
+  else if(p.status==='idle'&&!p.walking&&(Math.floor(T/900)%6)<2){R(x+9,iy+2,3,1,'#cfe3ef');R(x+11,iy+1,1,1,'#cfe3ef');R(x+9,iy+3,1,1,'#cfe3ef');}
+}
+function chair(x,y){R(x-6,y-4,12,8,'#3f8f5a');R(x-5,y-3,10,2,'#57a874')}
+
+/* ---------- 움직임 ---------- */
+function goTo(p,tx,ty,cb){
+  const fy=frontY(p.hy),tfy=ty;const corr=CORR.reduce((a,c)=>Math.abs(c-(p.hx+tx)/2)<Math.abs(a-(p.hx+tx)/2)?c:a);
+  p.path=[[p.x,fy],[corr,fy],[corr,tfy],[tx,tfy]];p.onArrive=cb||null;p.walking=true;
+}
+function goHome(p,cb){
+  const fy=frontY(p.hy);const corr=CORR.reduce((a,c)=>Math.abs(c-(p.x+p.hx)/2)<Math.abs(a-(p.x+p.hx)/2)?c:a);
+  p.path=[[corr,p.y],[corr,fy],[p.hx,fy],[p.hx,p.hy]];p.onArrive=()=>{p.dir='down';cb&&cb()};p.walking=true;
+}
+function step(p,dt){
+  if(!p.path.length){p.walking=false;return}
+  const [tx,ty]=p.path[0];const sp=reduce?999:0.055*dt;const dx=tx-p.x,dy=ty-p.y;const d=Math.hypot(dx,dy);
+  if(d<=sp){p.x=tx;p.y=ty;p.path.shift();if(!p.path.length){p.walking=false;const f=p.onArrive;p.onArrive=null;f&&f()}return}
+  p.x+=dx/d*sp;p.y+=dy/d*sp;p.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down');
+}
+function say(id,text,ms){const p=P[id];if(!p)return;p.bubble=String(text||'').slice(0,60);p.bubbleUntil=performance.now()+(ms||5200)}
+
+/* 업무 이벤트 → 애니메이션 */
+let reports=0;
+function playEvent(ev){
+  const p=P[ev.who];if(!p)return;
+  if(ev.kind==='handoff'&&P[ev.to]&&!p.walking){
+    const t=P[ev.to];p.carry=true;say(ev.who,ev.text);
+    goTo(p,t.hx+(t.hx<p.hx?14:-14),frontY(t.hy),()=>{p.dir='up';p.carry=false;t.carryDesk=true;say(ev.to,'받았어요!',1800);
+      setTimeout(()=>goHome(p),700)});
+  }else if(ev.kind==='report'&&!p.walking){
+    p.carry=true;say(ev.who,ev.text);
+    goTo(p,BOSS.x,BOSS.y-6,()=>{p.dir='down';p.carry=false;reports++;setTimeout(()=>goHome(p),900)});
+  }else{say(ev.who,ev.text)}
+}
+
+/* ---------- 오버레이 (말풍선·이름표·화이트보드) ---------- */
+const tags={},bubbles={};
+for(const s of STAFF){const t=document.createElement('div');t.className='tag';t.textContent=s.name;ov.appendChild(t);tags[s.id]=t;
+  const b=document.createElement('div');b.className='bubble';b.style.opacity=0;ov.appendChild(b);bubbles[s.id]=b}
+const wb=document.createElement('div');wb.className='wb';ov.appendChild(wb);
+const bossTag=document.createElement('div');bossTag.className='tag';bossTag.textContent='사장님 책상';ov.appendChild(bossTag);
+function pct(v,max){return (v/max*100)+'%'}
+function overlay(now){
+  for(const s of STAFF){const p=P[s.id];const t=tags[s.id],b=bubbles[s.id];
+    t.style.left=pct(p.x,W);t.style.top=pct(p.y+ (p.walking?2:26),H);
+    const show=p.bubble&&now<p.bubbleUntil;
+    if(show&&b.textContent!==p.bubble)b.textContent=p.bubble;
+    b.style.opacity=show?1:0;b.style.left=pct(Math.min(Math.max(p.x,40),280),W);b.style.top=pct(p.y-24,H)}
+  bossTag.style.left=pct(BOSS.x,W);bossTag.style.top=pct(BOSS.y+24,H);
+  wb.style.left=pct(114,W);wb.style.top=pct(7,H);wb.style.width=pct(92,W);wb.style.height=pct(30,H);
+}
+function renderBoard(){
+  const work=STAFF.filter(s=>P[s.id].status==='working'||P[s.id].status==='review').length;
+  wb.innerHTML='<div class="t">TODAY</div>'+esc(STATE.mission||'업무 대기 중')+'<br><span style="color:#3f6fae">진행 '+work+'명 · 보고 '+reports+'건</span>';
+}
+
+/* ---------- 메인 루프 ---------- */
+let T=0,last=performance.now();
+function frame(now){
+  const dt=Math.min(64,now-last);last=now;T+=dt;
+  for(const s of STAFF)step(P[s.id],dt);
+  idleWander(now);
+  ctx.clearRect(0,0,W,H);
+  floor();wall();decor();
+  // 그리기 순서: y가 작은 것부터
+  const items=[];
+  for(const s of STAFF){const d=DESKS[s.id];items.push({y:d.y-8,f:()=>chair(d.x,d.y-6)});items.push({y:d.y+1,f:()=>desk(s.id,d.x,d.y)})}
+  items.push({y:BOSS.y+1,f:bossDesk});
+  for(const s of STAFF){const p=P[s.id];items.push({y:p.walking||p.y>p.hy+1?p.y+2:p.y,f:()=>person(p)})}
+  items.sort((a,b)=>a.y-b.y).forEach(i=>i.f());
+  drawClock();
+  overlay(now);
+  requestAnimationFrame(frame);
+}
+function drawClock(){const cx=226,cy=22;R(cx-7,cy-7,14,14,'#2b2622');R(cx-6,cy-6,12,12,'#f3efe6');
+  const d=new Date();const a1=(d.getHours()%12+d.getMinutes()/60)/12*Math.PI*2,a2=d.getMinutes()/60*Math.PI*2;
+  for(let i=0;i<4;i++){R(cx+Math.round(Math.sin(a1)*i*0.9)-0.5,cy-Math.round(Math.cos(a1)*i*0.9)-0.5,1,1,'#2b2622')}
+  for(let i=0;i<6;i++){R(cx+Math.round(Math.sin(a2)*i*0.9)-0.5,cy-Math.round(Math.cos(a2)*i*0.9)-0.5,1,1,'#c2643a')}}
+// 쉬는 직원은 가끔 커피 마시러 가요
+let nextWander=performance.now()+6000;
+function idleWander(now){
+  if(now<nextWander||reduce)return;nextWander=now+9000+Math.random()*9000;
+  const idle=STAFF.map(s=>P[s.id]).filter(p=>p.status==='idle'&&!p.walking&&p.x===p.hx&&p.y===p.hy);
+  if(!idle.length)return;const p=idle[Math.floor(Math.random()*idle.length)];
+  goTo(p,280,206,()=>{p.dir='right';say(p.id,'커피 한 잔…',2000);setTimeout(()=>goHome(p),2400)});
+}
+
+
+/* ---------- 직원 목록 ---------- */
+function miniAvatar(s){const c=document.createElement('canvas');c.width=14;c.height=14;const g=c.getContext('2d');
+  const r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h)};
+  r(3,3,8,7,s.skin);r(3,2,8,3,s.hair);r(2,3,1,4,s.hair);r(11,3,1,4,s.hair);r(5,6,1,2,'#1a1410');r(8,6,1,2,'#1a1410');r(3,10,8,4,s.shirt);
+  if(s.acc==='cap')r(2,1,10,2,'#c2433a');if(s.acc==='bun')r(5,0,4,2,s.hair);if(s.acc==='glasses'){r(4,6,3,1,'#2b2622');r(7,6,3,1,'#2b2622')}
+  return c}
+const listEl=$('staffList');
+function renderStaff(){
+  listEl.innerHTML='';
+  for(const s of STAFF){const p=P[s.id];const li=document.createElement('li');li.appendChild(miniAvatar(s));
+    const mid=document.createElement('div');mid.style.minWidth='0';
+    const nm=document.createElement('div');nm.className='nm';nm.textContent=s.name;
+    const tk=document.createElement('div');tk.className='tk';tk.textContent=p.task||s.role;mid.append(nm,tk);
+    const pill=document.createElement('span');pill.className='pill p-'+(STATUS[p.status]?p.status:'idle');pill.textContent=STATUS[p.status]||'대기';
+    li.append(mid,pill);listEl.appendChild(li)}
+  renderBoard();
+}
+cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
+  let best=null,bd=18;for(const s of STAFF){const p=P[s.id];const d=Math.hypot(p.x-x,p.y-10-y);if(d<bd){bd=d;best=s.id}}
+  if(best)say(best,P[best].task||STAFF.find(s=>s.id===best).role,3000)});
+
+/* ---------- 업무일지 ---------- */
+const logEl=$('logList');const LOGS=[];
+function hhmm(ms){const d=new Date(ms);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function renderLog(){
+  logEl.innerHTML='';
+  if(!LOGS.length){logEl.innerHTML='<li class="empty">아직 기록이 없어요.</li>';return}
+  for(const ev of LOGS.slice(-60).reverse()){const li=document.createElement('li');const s=STAFF.find(x=>x.id===ev.who);
+    const tm=document.createElement('time');tm.textContent=hhmm(ev.at);
+    const body=document.createElement('div');const b=document.createElement('b');b.textContent=s?s.name:'사무실';
+    const k=document.createElement('span');k.className='k';k.textContent=(KIND[ev.kind]||'')+(ev.to&&P[ev.to]?' → '+P[ev.to].name:'');
+    const t=document.createElement('div');t.textContent=ev.text||'';body.append(b,k,t);li.append(tm,body);logEl.appendChild(li)}
+}
+
+/* ---------- 프로젝트 ---------- */
+let PROJECTS=[],QUEUE=[];
+const projEl=$('projects');
+function renderProjects(){
+  projEl.innerHTML='';
+  if(!PROJECTS.length){projEl.innerHTML='<p class="empty">아직 프로젝트가 없어요. 위에 ZIP을 넣어 보세요.</p>';return}
+  for(const p of PROJECTS){
+    const card=document.createElement('div');card.className='card proj';
+    const o=p.order||{};const days=(o.days||[]).map(d=>'일월화수목금토'[d]).join('');
+    const waiting=QUEUE.includes(p.name)?' · 줄 서는 중':'';
+    card.innerHTML=`<div class="nm"></div><div class="meta sum"></div>
+      <div class="meta">${o.enabled?`📅 ${esc(o.from||'')}~${esc(o.to||'')} · ${esc(days)} · ${esc(o.time||'')}`:'📅 일정 없음'}${esc(waiting)}</div>
+      <div class="meta goal"></div>
+      <div class="acts"><button class="primary" data-a="order">업무 지시서</button><button data-a="run">지금 일 시키기</button><button data-a="profile">규칙 보기</button><button data-a="results">결과 폴더</button></div>
+      <ul class="runs"></ul>`;
+    card.querySelector('.nm').textContent=p.name;
+    card.querySelector('.sum').textContent=(p.type||[]).join(', ')+(p.summary?' · '+p.summary:'');
+    card.querySelector('.goal').textContent=o.goal?'할 일: '+o.goal:'할 일: 스스로 점검하고 고치기';
+    const ul=card.querySelector('.runs');
+    if(!p.runs.length){const li=document.createElement('li');li.className='empty';li.textContent='아직 한 일이 없어요';ul.appendChild(li)}
+    for(const r of p.runs.slice(0,5)){const li=document.createElement('li');const a=document.createElement('a');a.textContent=`${r.run.replace('_',' ')} · ${r.mode} · ${r.done||0}건 완료`;
+      a.onclick=()=>showReport(p.name,r.run);li.appendChild(a);ul.appendChild(li)}
+    card.querySelector('[data-a=order]').onclick=()=>openOrder(p);
+    card.querySelector('[data-a=run]').onclick=async()=>{try{const r=await post('/api/project/'+encodeURIComponent(p.name)+'/run',{goal:(p.order&&p.order.goal)||''});if(!r.ok)alertMsg('이미 일하는 중이거나 줄 서 있어요.')}catch(e){alertMsg(e.message)}};
+    card.querySelector('[data-a=profile]').onclick=async()=>{const r=await api('/api/project/'+encodeURIComponent(p.name)+'/profile');showText(p.name+' 규칙',r.text,()=>post('/api/open',{what:'project',project:p.name}))};
+    card.querySelector('[data-a=results]').onclick=()=>post('/api/open',{what:'results',project:p.name});
+    projEl.appendChild(card)}
+}
+function alertMsg(m){$('setupMsg').textContent=m;$('setupAlert').hidden=false;setTimeout(()=>{if($('setupMsg').textContent===m&&MODEL)$('setupAlert').hidden=true},6000)}
+
+// 아주 간단한 마크다운 → 화면 (먼저 모두 이스케이프)
+function md(t){
+  const lines=esc(t).split('\n');let html='',list=false;
+  for(let l of lines){
+    l=l.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+    if(/^#{1,2} /.test(l)){if(list){html+='</ul>';list=false}html+='<h2>'+l.replace(/^#+ /,'')+'</h2>';continue}
+    if(/^- /.test(l)){if(!list){html+='<ul>';list=true}html+='<li>'+l.slice(2)+'</li>';continue}
+    if(list){html+='</ul>';list=false}
+    if(l.trim()&&!/^&lt;!--/.test(l))html+='<p>'+l+'</p>';
+  }
+  return html+(list?'</ul>':'');
+}
+let textOpenFn=null;
+function showText(title,text,openFn){$('textTitle').textContent=title;$('textBody').innerHTML=md(text);textOpenFn=openFn||null;$('textOpen').hidden=!openFn;$('dlgText').showModal()}
+$('textClose').onclick=()=>$('dlgText').close();
+$('textOpen').onclick=()=>textOpenFn&&textOpenFn();
+async function showReport(name,run){const r=await api('/api/project/'+encodeURIComponent(name)+'/report?run='+encodeURIComponent(run));showText('보고서 · '+name,r.text,()=>post('/api/open',{what:'run',project:name,run}))}
+
+/* 업무 지시서 */
+let orderFor=null;
+const DAYN=['일','월','화','수','목','금','토'];
+$('oDays').innerHTML=DAYN.map((d,i)=>`<label><input type="checkbox" value="${i}">${d}</label>`).join('');
+function openOrder(p){orderFor=p.name;const o=p.order||{};$('orderTitle').textContent=p.name+' 업무 지시서';
+  $('oGoal').value=o.goal||'';$('oFrom').value=o.from||'';$('oTo').value=o.to||'';$('oTime').value=o.time||'09:00';$('oMax').value=o.maxMinutes||60;$('oOn').checked=!!o.enabled;$('oTests').checked=!!p.allowProjectTests;$('oLocal').checked=!!p.localOnly;
+  $('oTests').disabled=!p.hasProjectTests;
+  for(const c of $('oDays').querySelectorAll('input'))c.checked=(o.days||[1,2,3,4,5]).includes(Number(c.value));
+  $('dlgOrder').showModal()}
+$('orderCancel').onclick=()=>$('dlgOrder').close();
+$('orderForm').onsubmit=async e=>{e.preventDefault();
+  const days=[...$('oDays').querySelectorAll('input:checked')].map(c=>Number(c.value));
+  try{await post('/api/project/'+encodeURIComponent(orderFor)+'/order',{goal:$('oGoal').value,from:$('oFrom').value,to:$('oTo').value,days,time:$('oTime').value,maxMinutes:Number($('oMax').value),enabled:$('oOn').checked});
+    await post('/api/project/'+encodeURIComponent(orderFor)+'/settings',{allowProjectTests:$('oTests').checked,localOnly:$('oLocal').checked});
+    $('dlgOrder').close();poll()}catch(err){alertMsg(err.message)}};
+
+/* ZIP 넣기 */
+const drop=$('drop');
+let uploading=false;
+async function upload(f){if(!f||!/\.zip$/i.test(f.name)){alertMsg('ZIP 파일만 넣을 수 있어요.');return}
+  uploading=true;drop.firstChild.textContent=`'${f.name}' 올리는 중… (${Math.round(f.size/1048576)}MB) `;
+  try{await api('/api/upload?name='+encodeURIComponent(f.name),{method:'POST',body:f});drop.firstChild.textContent='받았어요! 팀장이 살펴보는 중이에요. '}
+  catch(e){alertMsg(e.message);drop.firstChild.textContent='프로젝트 ZIP 파일을 여기에 끌어다 놓거나 '}
+  finally{uploading=false}}
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');upload(e.dataTransfer.files[0])});
+$('btnPick').onclick=()=>$('file').click();
+$('file').onchange=e=>{upload(e.target.files[0]);e.target.value=''};
+$('btnInbox').onclick=()=>post('/api/open',{what:'inbox'});
+
+/* 설정 */
+let MODEL='';
+async function openSetup(){
+  $('dlgSetup').showModal();const box=$('setupBody');box.innerHTML='<p class="note">컴퓨터 사양을 확인하는 중…</p>';
+  let s;try{s=await api('/api/setup')}catch(e){box.innerHTML='<p>'+esc(e.message)+'</p>';return}
+  if(OFFLINE){box.innerHTML='<p>'+esc(OFF_MSG)+'</p>';return}
+  const gpus=s.hw.gpus.length?s.hw.gpus.map(g=>`${esc(g.name)}${g.vramGB?` (${g.vramGB}GB)`:''}`).join(', '):'없음 (CPU로 돌려요)';
+  const ollama=s.ollama.running?`켜져 있어요 · 모델 ${s.ollama.models.length}개`:'꺼져 있거나 설치되지 않았어요';
+  box.innerHTML=`<dl class="hw"><dt>메모리</dt><dd>${s.hw.ramGB}GB</dd><dt>그래픽카드</dt><dd>${gpus}</dd><dt>CPU</dt><dd>${esc(s.hw.cpu)} · ${s.hw.cores}코어</dd><dt>Ollama</dt><dd>${esc(ollama)}</dd></dl>
+    ${s.ollama.running?'':`<div class="alert">Ollama가 필요해요. <b>ollama.com</b>에서 Windows용을 받아 설치한 뒤 이 창을 다시 열어 주세요.</div>`}
+    <p><b>추천 모델:</b> ${esc(s.rec.id)} — ${esc(s.rec.label)}<br><span class="note">${esc(s.rec.why)} (내려받기 약 ${s.rec.sizeGB}GB)</span></p>
+    <label>사용할 모델<select id="mSel">${s.tiers.map(t=>`<option value="${esc(t.id)}" ${t.id===(s.model||s.rec.id)?'selected':''}>${esc(t.id)} · ${esc(t.label)} · ${t.sizeGB}GB</option>`).join('')}<option value="__custom">직접 입력…</option></select></label>
+    <label id="mCustomWrap" hidden>모델 이름 (Ollama)<input type="text" id="mCustom" placeholder="예: qwen2.5-coder:7b"></label>
+    <div class="row"><button class="primary" id="mSave">이 모델로 정하기${s.ollama.running?' (없으면 내려받기)':''}</button><button id="mSpeed" ${s.model&&(s.ollama.models||[]).some(m=>m===s.model||m===s.model+':latest')?'':'disabled'}>속도 재 보기</button></div>
+    <div id="mProg" class="note"></div><div class="bar"><i id="mBar"></i></div>
+    <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="light"> 가볍게 모드 <span class="note">(CPU를 절반만 써요. 일은 느려지지만 그동안 컴퓨터를 편하게 쓸 수 있어요)</span></label>
+    <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="auto"> 윈도우를 켤 때 AI 사무실도 자동으로 켜기</label>
+    <h4 class="sec-title">AI 두뇌 목록</h4>
+    <p class="note">위에서부터 순서대로 써요. 무료 한도가 차거나 오류가 나면 다음 두뇌로 넘어가고, 마지막엔 늘 내 컴퓨터 AI가 받쳐 줘요. <b>키는 각자 자기 키를 넣고, 이 컴퓨터에만 저장돼요.</b> 클라우드 두뇌를 쓰면 코드가 그 회사로 보내져요. 무료 등급은 학습에 쓰일 수 있어요.</p>
+    <ul class="brains" id="brainList"></ul>
+    <div class="row"><select id="brainAdd"></select><button id="brainAddBtn">두뇌 추가</button><button class="primary" id="brainSave">두뇌 목록 저장</button></div>
+    <div id="brainMsg" class="note"></div>
+    <p class="note">Node ${esc(s.node)} · 지금 모델: ${esc(s.model||'없음')}</p>`;
+  $('mSel').onchange=()=>{$('mCustomWrap').hidden=$('mSel').value!=='__custom'};
+  $('mSave').onclick=async()=>{const m=$('mSel').value==='__custom'?$('mCustom').value.trim():$('mSel').value;try{await post('/api/setup/model',{model:m});$('mProg').textContent='저장했어요. 내려받기가 필요하면 아래에 진행률이 보여요.';$('mSpeed').disabled=false}catch(e){$('mProg').textContent=e.message}};
+  $('mSpeed').onclick=async()=>{$('mProg').textContent='재는 중… (처음엔 모델을 불러오느라 1~3분 걸릴 수 있어요)';try{const r=await post('/api/setup/speed');$('mProg').textContent=`응답 ${r.seconds}초${r.tokensPerSec?` · 초당 약 ${r.tokensPerSec}토큰`:''} — ${r.tokensPerSec>=15?'빠른 편이에요':r.tokensPerSec>=5?'쓸 만해요':'느린 편이라 업무 시간을 넉넉히 잡아 주세요'}`}catch(e){$('mProg').textContent=e.message}};
+  loadBrains();
+  $('light').checked=LIGHT;$('light').onchange=async e=>{try{await post('/api/light',{on:e.target.checked})}catch(err){$('mProg').textContent=err.message}};
+  $('auto').checked=AUTOSTART;$('auto').onchange=async e=>{try{await post('/api/autostart',{on:e.target.checked})}catch(err){$('mProg').textContent=err.message}};
+}
+$('btnQuit').onclick=async()=>{
+  const msg=STATE.running?'지금 직원들이 일하는 중이에요. 그래도 퇴근할까요? (하던 일은 저장되지 않아요)':'AI 사무실을 끌까요? 다시 켜려면 AI-Office.vbs를 더블클릭하면 돼요.';
+  if(!confirm(msg))return;
+  try{await post('/api/quit')}catch{}
+  setTimeout(()=>{$('runState').textContent='퇴근했어요';$('runSub').textContent='AI-Office.vbs로 다시 켤 수 있어요'},300)};
+/* 두뇌 목록 */
+let BR={list:[],presets:{}};
+async function loadBrains(){try{BR=await api('/api/brains')}catch(e){$('brainMsg').textContent=e.message;return}
+  $('brainAdd').innerHTML=Object.entries(BR.presets).map(([k,v])=>`<option value="${esc(k)}">${esc(v.label)}</option>`).join('');renderBrains()}
+function renderBrains(){
+  const ul=$('brainList');ul.innerHTML='';
+  BR.list.forEach((b,i)=>{const p=BR.presets[b.preset]||{};const li=document.createElement('li');
+    const help=p.kind==='cli'?`<span class="note">이 컴퓨터에 설치하고 로그인해 두세요: ${esc(p.install)}</span>`:(p.keyUrl?`<span class="note">키 받는 곳: ${esc(p.keyUrl)}</span>`:'');
+    li.innerHTML=`<div class="top"><input type="checkbox" class="en" ${b.enabled?'checked':''} aria-label="사용"><b>${i+1}. ${esc(p.label||b.preset)}</b>
+      <button class="up" ${i?'':'disabled'} aria-label="위로">▲</button><button class="dn" ${i<BR.list.length-1?'':'disabled'} aria-label="아래로">▼</button><button class="tst">연결 시험</button><button class="del">빼기</button></div>
+      <div class="row2">${p.kind!=='cli'?`<input class="mdl" placeholder="모델 이름" value="${esc(b.model||'')}">`:''}${b.preset==='custom'?`<input class="url" placeholder="주소 (예: http://127.0.0.1:1234/v1)" value="${esc(b.baseUrl||'')}">`:''}${p.needKey||b.preset==='custom'?`<input class="key" type="password" autocomplete="off" placeholder="${b.hasKey?'키 저장됨 (바꾸려면 새로 입력)':'내 API 키 넣기'}">`:''}</div>
+      ${help}<div class="res"></div>`;
+    li.querySelector('.en').onchange=e=>{b.enabled=e.target.checked};
+    const m=li.querySelector('.mdl');if(m)m.oninput=e=>{b.model=e.target.value};
+    const u=li.querySelector('.url');if(u)u.oninput=e=>{b.baseUrl=e.target.value};
+    const k=li.querySelector('.key');if(k)k.oninput=e=>{b.key=e.target.value};
+    li.querySelector('.up').onclick=()=>{[BR.list[i-1],BR.list[i]]=[BR.list[i],BR.list[i-1]];renderBrains()};
+    li.querySelector('.dn').onclick=()=>{[BR.list[i+1],BR.list[i]]=[BR.list[i],BR.list[i+1]];renderBrains()};
+    li.querySelector('.del').onclick=()=>{BR.list.splice(i,1);renderBrains()};
+    li.querySelector('.tst').onclick=async()=>{const res=li.querySelector('.res');res.textContent='저장하고 시험하는 중…';
+      try{await saveBrains(true);const r=await post('/api/brains/test',{id:b.id});res.textContent=r.ok?`✅ 연결 성공 (${r.seconds}초): ${r.reply}`:'❌ '+r.error}catch(e){res.textContent='❌ '+e.message}};
+    ul.appendChild(li)});
+  const last=document.createElement('li');last.className='fixed';last.innerHTML=`<div class="top"><b>마지막 대타: 내 컴퓨터 AI (${esc(MODEL||'모델 없음')})</b></div><span class="note">위 두뇌를 모두 못 쓸 때 일해요. 무료이고 코드가 밖으로 나가지 않아요.</span>`;ul.appendChild(last)}
+async function saveBrains(quiet){
+  const r=await post('/api/brains/save',{list:BR.list.map(b=>({id:b.id,preset:b.preset,enabled:b.enabled,model:b.model,baseUrl:b.baseUrl,key:b.key||''}))});
+  BR.list=r.list;if(!quiet){$('brainMsg').textContent='저장했어요.';renderBrains()}}
+$('brainAddBtn')&&0;
+document.addEventListener('click',e=>{
+  if(e.target&&e.target.id==='brainAddBtn'){const k=$('brainAdd').value;const p=BR.presets[k];if(!p)return;
+    BR.list.push({id:k+'-'+Date.now().toString(36),preset:k,enabled:true,model:p.model,baseUrl:p.baseUrl,hasKey:false});renderBrains()}
+  if(e.target&&e.target.id==='brainSave'){saveBrains().catch(err=>{$('brainMsg').textContent=err.message})}});
+$('btnSetup').onclick=openSetup;$('btnSetup2').onclick=openSetup;$('setupClose').onclick=()=>$('dlgSetup').close();
+
+/* ---------- 서버와 맞추기 ---------- */
+let SEQ=0,AUTOSTART=false,first=true,OFFLINE=false,LIGHT=false,BRAINS=0;
+async function poll(){
+  let s;try{s=await api('/api/state?since='+SEQ)}catch{
+    $('runState').textContent='꺼져 있어요';$('runSub').textContent='AI-Office.vbs로 다시 켜 주세요';$('lamp').className='lamp';
+    $('alertLabel').textContent='안내';$('setupMsg').textContent=OFF_MSG;$('setupAlert').hidden=false;$('btnSetup2').hidden=true;OFFLINE=true;return}
+  if(OFFLINE){OFFLINE=false;$('btnSetup2').hidden=false;$('setupAlert').hidden=true;$('alertLabel').textContent='시작 전에'}
+  const o=s.office;STATE.running=o.running;STATE.mission=o.mission;reports=o.reports;
+  for(const s2 of STAFF){const v=o.staff[s2.id]||{};const p=P[s2.id];if(v.status==='working'&&p.status!=='working')p.carryDesk=false;p.status=STATUS[v.status]?v.status:'idle';p.task=v.task||''}
+  $('lamp').className='lamp'+(o.running?' on':'');$('runState').textContent=o.running?'업무 진행 중':'쉬는 중';
+  $('runSub').textContent=o.running?`${o.project} · ${hhmm(o.startedAt)} 시작`:(o.endedAt?'마지막 업무 '+hhmm(o.endedAt):'업무 대기');
+  $('mission').textContent=o.running?`${o.project}: ${o.mission}`:'프로젝트 ZIP을 넣으면 AI 직원들이 알아서 살펴보고 고쳐요.';
+  const fresh=s.logs.filter(l=>l.id>SEQ);SEQ=s.seq;LOGS.push(...fresh);if(LOGS.length>300)LOGS.splice(0,LOGS.length-300);
+  if(!first)fresh.forEach((e,i)=>setTimeout(()=>playEvent(e),i*1400));first=false;
+  MODEL=s.model;AUTOSTART=s.autostart;LIGHT=!!s.light;BRAINS=s.brainCount||0;
+  const pull=s.setup&&s.setup.pulling;
+  if(!MODEL&&!BRAINS){$('setupMsg').textContent='AI 두뇌를 정해 주세요. 설정에서 내 컴퓨터 AI를 내려받거나, 쓰고 있는 AI를 연결할 수 있어요.';$('setupAlert').hidden=false}
+  else if(pull){$('setupMsg').textContent=`모델 내려받는 중… ${s.setup.pct!=null?s.setup.pct+'%':''}`;$('setupAlert').hidden=false}
+  else if(!OFFLINE&&/모델 내려받는 중|AI 두뇌\(모델\)를|AI 두뇌를 정해/.test($('setupMsg').textContent))$('setupAlert').hidden=true;
+  if($('mSpeed'))$('mSpeed').disabled=!!pull||!MODEL;
+  if($('mBar')){$('mBar').style.width=(pull&&s.setup.pct!=null?s.setup.pct:0)+'%';if(pull)$('mProg').textContent=`내려받는 중 ${s.setup.pct??''}% · ${s.setup.msg||''}`;else if(s.setup.msg&&$('mProg').textContent.startsWith('내려받는'))$('mProg').textContent=s.setup.msg}
+  const dz=drop.firstChild;
+  if(s.intake){dz.textContent=`'${s.intake.name}' ${s.intake.step}${s.intake.pct!=null?' '+s.intake.pct+'%':''}… `}
+  else if(/압축 푸는 중|정리하는 중|살펴보는 중|소개를 쓰는 중|받았어요|올리는 중/.test(dz.textContent)&&!uploading){dz.textContent='프로젝트 ZIP 파일을 여기에 끌어다 놓거나 '}
+  QUEUE=s.queue;$('queueInfo').textContent=QUEUE.length?'대기 '+QUEUE.length:'';
+  const pj=JSON.stringify([s.projects,QUEUE]);if(pj!==renderProjects._last){renderProjects._last=pj;PROJECTS=s.projects;renderProjects()}
+  renderStaff();if(fresh.length)renderLog();
+}
+renderStaff();renderLog();
+requestAnimationFrame(t=>{last=t;frame(t)});
+poll();setInterval(poll,1500);
+})();
+</script>
+</body>
+</html>

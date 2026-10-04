@@ -1,0 +1,21 @@
+{
+  "설명": "GitHub 버전 설정이에요. 보통은 사이트의 AI 열쇠함에서 바꿔요. 키는 여기 넣지 말고 사이트 AI 열쇠함으로 넣어요.",
+  "두뇌순서": [
+    "gemini",
+    "openrouter",
+    "groq",
+    "openai",
+    "anthropic"
+  ],
+  "모델": {
+    "gemini": "gemini-flash-latest",
+    "openrouter": "openrouter/free",
+    "groq": "llama-3.3-70b-versatile",
+    "openai": "gpt-4o-mini",
+    "anthropic": "claude-sonnet-4-5"
+  },
+  "작은AI쓰기": true,
+  "작은AI모델": "qwen2.5-coder:3b",
+  "하루최대분": 120,
+  "두뇌": []
+}
