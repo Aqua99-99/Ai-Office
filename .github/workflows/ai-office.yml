@@ -1,0 +1,160 @@
+# AI 사무실 — GitHub에서 AI 직원 팀이 자동으로 일해요. (컴퓨터가 꺼져 있어도 돼요)
+# 언제 일하나요?
+#   1) 매일 아침 8시 50분(한국 시간): 업무 지시서에서 오늘이 일하는 날인 프로젝트를 처리
+#   2) Actions → AI 사무실 → Run workflow: 프로젝트 이름과 할 일을 적으면 바로 일해요
+#   3) 업무 지시서 이슈를 쓰면 접수하고, "지금 바로"를 고르면 바로 일해요
+#   4) 받은편지함에 ZIP을 올리면 새 프로젝트로 등록해요
+name: AI 사무실
+
+on:
+  schedule:
+    - cron: "50 23 * * *"
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "프로젝트 이름 (비워 두면 오늘 일정만 처리)"
+        required: false
+        default: ""
+      goal:
+        description: "할 일 (비워 두면 업무 지시서 내용 또는 자율 점검)"
+        required: false
+        default: ""
+  issues:
+    types: [opened]
+  push:
+    paths:
+      - "ai-office/받은편지함/*.zip"
+
+concurrency:
+  group: ai-office
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  # 원본(템플릿) 저장소나 공개 저장소에서는 일하지 않아요. (내 정보가 남에게 보이지 않게)
+  # 공개 저장소에서 꼭 돌리고 싶으면 Settings → Secrets and variables → Actions → Variables에 AIO_ALLOW_PUBLIC = 1
+  check:
+    if: github.event_name != 'issues' || startsWith(github.event.issue.title, '[업무지시서]')
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.c.outputs.go }}
+    steps:
+      - id: c
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ALLOW: ${{ vars.AIO_ALLOW_PUBLIC }}
+        run: |
+          info=$(gh api "repos/$GITHUB_REPOSITORY")
+          t=$(echo "$info" | jq -r .is_template); p=$(echo "$info" | jq -r .private)
+          if [ "$t" = "true" ]; then echo "원본(템플릿) 저장소라 쉬어요."; echo "go=false" >> "$GITHUB_OUTPUT"
+          elif [ "$p" != "true" ] && [ "$ALLOW" != "1" ]; then echo "::warning::공개 저장소라 일하지 않아요. Settings에서 Private으로 바꿔 주세요."; echo "go=false" >> "$GITHUB_OUTPUT"
+          else echo "go=true" >> "$GITHUB_OUTPUT"; fi
+
+  office:
+    needs: check
+    if: needs.check.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    defaults:
+      run:
+        working-directory: ai-office
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 기본 파일 확인 (.gitignore가 없으면 만들기)
+        run: |
+          if [ ! -f .gitignore ]; then
+            printf '%s\n' "설정.json" "기록.log" "기록.log.old" "받은편지함/처리됨/" "받은편지함/실패/" "프로젝트/*/처음/" "프로젝트/*/_작업/" "프로젝트/*/_풀기/" "결과/**/결과물_*.zip" "결과/**/원본/" "_알림/" "_내려받기/" > .gitignore
+          fi
+
+      - name: AI 직원들 일하기
+        env:
+          AIO_KEY_1: ${{ secrets.AIO_KEY_1 }}
+          AIO_KEY_2: ${{ secrets.AIO_KEY_2 }}
+          AIO_KEY_3: ${{ secrets.AIO_KEY_3 }}
+          AIO_KEY_4: ${{ secrets.AIO_KEY_4 }}
+          AIO_KEY_5: ${{ secrets.AIO_KEY_5 }}
+          GH_TOKEN: ${{ github.token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AIO_PROJECT: ${{ github.event.inputs.project }}
+          AIO_GOAL: ${{ github.event.inputs.goal }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR_ASSOC: ${{ github.event.issue.author_association }}
+        run: node app/cloud.js
+
+      - name: 결과물 ZIP 올리기
+        if: always() && hashFiles('ai-office/_내려받기/*.zip') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI사무실-결과물-${{ github.run_number }}
+          path: ai-office/_내려받기/*.zip
+          retention-days: 30
+
+      - name: 결과물 ZIP을 사이트 내려받기 칸에 올리기 (aio-downloads 가지, 프로젝트마다 최근 5개)
+        if: always() && hashFiles('ai-office/_내려받기/*.zip') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          dl=$(mktemp -d)
+          if git fetch --depth=1 origin aio-downloads 2>/dev/null; then git archive FETCH_HEAD | tar -x -C "$dl"; fi
+          cp _내려받기/*.zip "$dl"/
+          node -e '
+            const fs=require("fs"),path=require("path"),d=process.argv[1];
+            const g={};
+            for(const f of fs.readdirSync(d).filter(f=>f.endsWith(".zip"))){const m=f.match(/^(.*)_(\d{4}-\d{2}-\d{2}_\d{4,6})\.zip$/);const k=m?m[1]:f;(g[k]=g[k]||[]).push(f);}
+            for(const k in g){g[k].sort().reverse().slice(5).forEach(f=>fs.unlinkSync(path.join(d,f)));}
+          ' "$dl"
+          cd "$dl"
+          git init -q -b aio-downloads
+          git config user.name "AI 사무실"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "AI 사무실 결과물 ZIP 보관함 (자동으로 바뀌어요)" > README.md
+          git add -A
+          git commit -q -m "결과물 $(TZ=Asia/Seoul date +%Y-%m-%d_%H%M)"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" aio-downloads
+
+      - name: 기록 저장 (보고서·프로젝트 상태)
+        if: always()
+        run: |
+          git config user.name "AI 사무실"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "저장할 변경 없음"; exit 0; fi
+          git commit -m "AI 사무실 업무 기록 $(TZ=Asia/Seoul date +%Y-%m-%d_%H%M)"
+          for i in 1 2 3; do
+            if git pull --rebase --autostash; then git push && break
+            else git rebase --abort || true; git pull --no-rebase --no-edit -X ours && git push && break; fi
+            sleep 5
+          done
+
+      - name: 알림 보내기 (이슈)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh label create "AI 보고" --color "c2643a" --description "AI 사무실 보고서" --force >/dev/null 2>&1 || true
+          shopt -s nullglob
+          if [ -n "$ISSUE_NUMBER" ] && [ -f "_알림/이슈답장.md" ]; then
+            gh issue comment "$ISSUE_NUMBER" --body-file "_알림/이슈답장.md"
+            gh issue close "$ISSUE_NUMBER" || true
+          fi
+          for f in _알림/*.md; do
+            [ "$(basename "$f")" = "이슈답장.md" ] && continue
+            title=$(head -n 1 "$f" | sed 's/^# *//' | cut -c1-200)
+            tail -n +2 "$f" > /tmp/body.md
+            gh issue create --title "$title" --body-file /tmp/body.md --label "AI 보고" || gh issue create --title "$title" --body-file /tmp/body.md
+          done
